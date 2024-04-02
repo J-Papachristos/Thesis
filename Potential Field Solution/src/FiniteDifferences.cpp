@@ -4,8 +4,9 @@
 #define A_SIZE (X_SIZE * N * N)
 #define b2Mb(X) (((X) / 1024) / 1024)
 
-#define L 1.0
-#define H 1.0
+#define L 1.0   // [m]
+#define H 1.0   // [m]
+#define t 0.003 // [m]
 
 #define N_SOURCES 1 // Number of Sources
 
@@ -17,16 +18,41 @@ int main(int argc, char const *argv[]) {
     double Dy = H / M, Dy2 = Dy * Dy;
     double Dx2Dy2 = Dx2 * Dy2;
 
-    /// Source/Sink Data :
-    double I = 0.5 / Dx / Dy;    // [A/m^2]
-    double sigma = 38e6 * 0.003; // [siemens/m^2] * [m] = [A/Vm^2]
-    double source = I / sigma;   // [A/m^2] / [A/Vm^2] = [V]
-    double x_source = (L / 2) - 137.5e-3, y_source = (H / 2);
-    double x_sink = (L / 2) + 137.5e-3, y_sink = (H / 2);
-    int i_source = x_source / Dx, j_source = y_source / Dy;
-    int i_sink = x_sink / Dx, j_sink = y_sink / Dy;
-    // printf("(%lf,%lf) -> (%d,%d)\n", x_source, y_source, i_source, j_source);
-    // printf("(%lf,%lf) -> (%d,%d)\n", x_sink, y_sink, i_sink, j_sink);
+    // Data Structure Initialization
+    Sparse *A_sp = (Sparse *) malloc(N * M * sizeof(Sparse));
+    for (int i = 0; i < N * M; i++) {
+        A_sp[i] = {NNZ_INIT, N * M};
+    }
+    double *b = (double *) malloc(X_SIZE);
+    double *x = (double *) malloc(X_SIZE);
+    memset(b, 0, X_SIZE);
+    memset(x, 0, X_SIZE);
+
+    /// File Input :
+    FILE *fp_init = fopen("input.dat", "r+");
+    double I;
+    fscanf(fp_init, "I %lf\n", &I);
+    // Source/Sink Data :
+    I = I / Dx / Dy;           // [A/m^2]
+    double sigma = 38e6 * t;   // [siemens/m^2] * [m] = [A/Vm^2]
+    double source = I / sigma; // [A/m^2] / [A/Vm^2] = [V]
+
+    int n_sources, n_sinks;
+    double x_source[n_sources], y_source[n_sources];
+    double x_sink[n_sinks], y_sink[n_sinks];
+    int i_source[n_sources], j_source[n_sources];
+    int i_sink[n_sinks], j_sink[n_sinks];
+
+    fscanf(fp_init, "n_sources %d", &n_sources);
+    for (int i = 0; i < n_sources; i++) {
+        fscanf(fp_init, "\tx %lf y %lf\n", &x_source[i], &y_source[i]);
+        i_source[i] = x_source[i] / Dx, j_source[i] = y_source[i] / Dy;
+    }
+    fscanf(fp_init, "n_sinks %d", &n_sinks);
+    for (int i = 0; i < n_sinks; i++) {
+        fscanf(fp_init, "\tx %lf y %lf\n", &x_sink[i], &y_sink[i]);
+        i_sink[i] = x_sink[i] / Dx, j_sink[i] = y_sink[i] / Dy;
+    }
 
     /// Crack Data :
     // double x_c0 = L / 2, y_c0 = M / 4;
@@ -34,20 +60,13 @@ int main(int argc, char const *argv[]) {
     // int i_c0 = x_c0 / Dx - 1, j_c0 = y_c0 / Dy;
     // int i_ce = x_ce / Dx + 1, j_ce = y_ce / Dy;
 
-    double *b = (double *) malloc(X_SIZE);
-    double *x = (double *) malloc(X_SIZE);
-    memset(b, 0, X_SIZE);
-    memset(x, 0, X_SIZE);
-
-    Sparse *A_sp = (Sparse *) malloc(N * M * sizeof(Sparse));
-    for (int i = 0; i < N * M; i++) {
-        A_sp[i] = {NNZ_INIT, N * M};
-    }
-
     // Set Source/Sink Terms
-    // todo Implement Multiple Source Terms
-    b[i_source + j_source * N] = source;
-    b[i_sink + j_sink * N] = -source;
+    for (int i = 0; i < n_sources; i++) {
+        b[i_source[i] + j_source[i] * N] = source;
+    }
+    for (int i = 0; i < n_sinks; i++) {
+        b[i_sink[i] + j_sink[i] * N] = -source;
+    }
 
     //// Neumann Boundary Conditions :
     // Surface 1 : (0,0) -> (L,0)
