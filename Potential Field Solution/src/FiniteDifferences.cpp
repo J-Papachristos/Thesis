@@ -11,10 +11,6 @@
 
 #define N_SOURCES 1 // Number of Sources
 
-double crackLine(int i, int i0, double crack_angle) {
-    return (i - i0) * tan(deg2rad(crack_angle));
-}
-
 int main(int argc, char const *argv[]) {
     /// Mesh Data :
     int N = atoi(argv[1]);
@@ -67,32 +63,25 @@ int main(int argc, char const *argv[]) {
 
     /// Crack Data :
     double x_c0, y_c0;
-    double crack_len, crack_thick, crack_angle;
+    double crack_len, crack_thick;
     int is_cracked;
     fscanf(fp_init, "is_cracked %d\n", &is_cracked);
     if (is_cracked) {
         fscanf(fp_init, "crack_pos %lf %lf\n", &x_c0, &y_c0);
         fscanf(fp_init, "crack_len %lf\n", &crack_len);
         fscanf(fp_init, "crack_thick %lf\n", &crack_thick);
-        fscanf(fp_init, "crack_angle %lf\n", &crack_angle);
     } else {
         x_c0 = y_c0 = 0;
-        crack_angle = crack_len = crack_thick = 0;
+        crack_len = crack_thick = 0;
     }
 
     int i_c0 = x_c0 / Dx, j_c0 = y_c0 / Dy;
-    // int i_minL = i_c0 - (int) floor((crack_len / 2.0) / sin(deg2rad(crack_angle))); // Min i based on Centerline
-    // int i_maxR = i_c0 + (int) ceil((crack_len / 2.0) / sin(deg2rad(crack_angle)));  // Max i based on Centerline
 
-    int i_cL = i_c0 - (int) floor((crack_thick / Dx / 2.0) / sin(deg2rad(crack_angle)));
-    int j_cL = j_c0 + (int) ceil((crack_thick / Dy / 2.0) * cos(deg2rad(crack_angle)));
-    int i_min_L = i_cL - (int) floor((crack_len / Dx / 2.0) * cos(deg2rad(crack_angle)));
-    int i_max_L = i_cL + (int) ceil((crack_len / Dx / 2.0) * cos(deg2rad(crack_angle)));
+    int i_min_crack = i_c0 - (int) ceil(crack_thick / 2.0 / Dx);
+    int i_max_crack = i_c0 + (int) ceil(crack_thick / 2.0 / Dx);
 
-    int i_cR = i_c0 + (int) ceil((crack_thick / Dx / 2.0) / sin(deg2rad(crack_angle)));
-    int j_cR = j_c0 - (int) floor((crack_thick / Dy / 2.0) * cos(deg2rad(crack_angle)));
-    int i_min_R = i_cR - (int) floor((crack_len / Dx / 2.0) * cos(deg2rad(crack_angle)));
-    int i_max_R = i_cR + (int) ceil((crack_len / Dx / 2.0) * cos(deg2rad(crack_angle)));
+    int j_min_crack = j_c0 - (int) ceil(crack_len / 2.0 / Dy);
+    int j_max_crack = j_c0 + (int) ceil(crack_len / 2.0 / Dy);
 
     // Set Source/Sink Terms
     for (int i = 0; i < n_sources; i++) {
@@ -146,54 +135,60 @@ int main(int argc, char const *argv[]) {
             }
 
             // S5 :
-            // if (i == i_c0 && j > j_c0 && j < j_ce) {
-            //     A_sp[i + N * j].set((i - 0) + j * N, -3);
-            //     A_sp[i + N * j].set((i - 1) + j * N, +4);
-            //     A_sp[i + N * j].set((i - 2) + j * N, -1);
-            //     continue;
-            // }
-            // if (i == i_ce && j > j_c0 && j < j_ce) {
-            //     A_sp[i + N * j].set((i + 0) + j * N, -3);
-            //     A_sp[i + N * j].set((i + 1) + j * N, +4);
-            //     A_sp[i + N * j].set((i + 2) + j * N, -1);
-            //     continue;
-            // }
-            // if (j == j_c0 && i >= i_c0 && i <= i_ce) {
-            //     A_sp[i + N * j].set(i + N * (j - 0), -3);
-            //     A_sp[i + N * j].set(i + N * (j - 1), +4);
-            //     A_sp[i + N * j].set(i + N * (j - 2), -1);
-            //     continue;
-            // }
-            // if (j == j_ce && i >= i_c0 && i <= i_ce) {
-            //     A_sp[i + N * j].set(i + N * (j + 0), -3);
-            //     A_sp[i + N * j].set(i + N * (j + 1), +4);
-            //     A_sp[i + N * j].set(i + N * (j + 2), -1);
-            //     continue;
-            // }
-
-            if (i >= i_min_L && i <= i_max_L) { // Left Side of Crack
-                int jc = j_cL + crackLine(i, i_cL, crack_angle);
-                int jc_prev = i - 1 >= i_min_L ? j_cL + crackLine(i - 1, i_cL, crack_angle) : jc;
-                int jc_next = i + 1 <= i_max_L ? j_cL + crackLine(i + 1, i_cL, crack_angle) : jc;
-                if (j >= (int) ceil((jc_prev + jc) / 2) &&
-                    j <= (int) floor((jc + jc_next) / 2)) {
+            if (i == i_min_crack) { // Left Side of Crack
+                if (j > j_min_crack && j < j_max_crack) {
                     A_sp[i + N * j].set((i - 0) + j * N, -3);
                     A_sp[i + N * j].set((i - 1) + j * N, +4);
                     A_sp[i + N * j].set((i - 2) + j * N, -1);
                     continue;
                 }
             }
-            if (i >= i_min_R && i <= i_max_R) { // Right Side of Crack
-                int jc = j_cR + crackLine(i, i_cR, crack_angle);
-                int jc_prev = i - 1 >= i_min_R ? j_cR + crackLine(i - 1, i_cR, crack_angle) : jc;
-                int jc_next = i + 1 <= i_max_R ? j_cR + crackLine(i + 1, i_cR, crack_angle) : jc;
-                if (j >= (int) ceil((jc_prev + jc) / 2) &&
-                    j <= (int) floor((jc + jc_next) / 2)) {
+            if (i == i_max_crack) { // Right Side of Crack
+                if (j > j_min_crack && j < j_max_crack) {
                     A_sp[i + N * j].set((i + 0) + j * N, -3);
                     A_sp[i + N * j].set((i + 1) + j * N, +4);
                     A_sp[i + N * j].set((i + 2) + j * N, -1);
                     continue;
                 }
+            }
+            if (j == j_min_crack) { // Bottom Side of Crack
+                if (i > i_min_crack && i < i_max_crack) {
+                    A_sp[i + N * j].set(i + N * (j - 0), -3);
+                    A_sp[i + N * j].set(i + N * (j - 1), +4);
+                    A_sp[i + N * j].set(i + N * (j - 2), -1);
+                    continue;
+                }
+            }
+            if (j == j_max_crack) { // Top Side of Crack
+                if (i > i_min_crack && i < i_max_crack) {
+                    A_sp[i + N * j].set(i + N * (j + 0), -3);
+                    A_sp[i + N * j].set(i + N * (j + 1), +4);
+                    A_sp[i + N * j].set(i + N * (j + 2), -1);
+                    continue;
+                }
+            }
+
+            if (i == i_min_crack && j == j_min_crack) { // Bottom Left Corner
+                A_sp[i + N * j].set(i + N * j, 1);
+                continue;
+            }
+            if (i == i_max_crack && j == j_min_crack) { // Bottom Right Corner
+                A_sp[i + N * j].set(i + N * j, 1);
+                continue;
+            }
+            if (i == i_min_crack && j == j_max_crack) { // Top Left Corner
+                A_sp[i + N * j].set(i + N * j, 1);
+                continue;
+            }
+            if (i == i_max_crack && j == j_max_crack) { // Top Right Corner
+                A_sp[i + N * j].set(i + N * j, 1);
+                continue;
+            }
+
+            if ((i > i_min_crack && i < i_max_crack) &&
+                (j > j_min_crack && j < j_max_crack)) {
+                A_sp[i + N * j].set(i + N * j, 1);
+                continue;
             }
 
             // Inner Nodes
