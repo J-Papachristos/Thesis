@@ -55,10 +55,13 @@ int main(int argc, char const *argv[]) {
     }
 
     /// Crack Data :
-    // double x_c0 = L / 2, y_c0 = M / 4;
-    // double x_ce = L / 2, y_ce = 3 * M / 4;
-    // int i_c0 = x_c0 / Dx - 1, j_c0 = y_c0 / Dy;
-    // int i_ce = x_ce / Dx + 1, j_ce = y_ce / Dy;
+    double x_c0, y_c0;
+    double crack_len, crack_thick, crack_angle;
+    fscanf(fp_init, "crack_pos %lf %lf\n", &x_c0, &y_c0);
+    fscanf(fp_init, "crack_len %lf\n", &crack_len);
+    fscanf(fp_init, "crack_thick %lf\n", &crack_thick);
+    fscanf(fp_init, "crack_angle %lf\n", &crack_angle);
+    int i_c0 = x_c0 / Dx, j_c0 = y_c0 / Dy;
 
     // Set Source/Sink Terms
     for (int i = 0; i < n_sources; i++) {
