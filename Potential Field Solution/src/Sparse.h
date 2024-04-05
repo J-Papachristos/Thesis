@@ -29,6 +29,7 @@ typedef struct sparse_row {
         memset(this->v, 0, n_cols * sizeof(double));
     }
 
+    /// @brief Destructor
     void free_sparse_row() {
         free(this->c);
         free(this->v);
