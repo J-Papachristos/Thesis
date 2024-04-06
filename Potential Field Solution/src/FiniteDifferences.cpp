@@ -1,4 +1,5 @@
-#include "Sparse.h"
+#include "libs/Sparse.h"
+#include "libs/FunctionDiscretize.h"
 
 #define X_SIZE (sizeof(double) * N * N)
 #define A_SIZE (X_SIZE * N * N)
