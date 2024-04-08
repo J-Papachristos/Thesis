@@ -148,9 +148,13 @@ typedef struct domain_ {
     }
 } domain;
 
+/// @brief Find Pointset P of Points that approximate the function func()
+/// on a given grid G and domain D. X-Direction Search Algorithm
+/// @param G Grid Struct
+/// @param D Domain Struct
+/// @param P Point Set
+/// @param func Function Pointer
 void funcDiscrete(grid G, domain D, pointSet *P, double (*func)(double)) {
-    // pointSet P(1); // Init an Empty Point Set
-
     int j = D.j_min;
     for (int i = D.i_min; i < D.i_max; i++) {
         int counter = 0;
@@ -180,6 +184,52 @@ void funcDiscrete(grid G, domain D, pointSet *P, double (*func)(double)) {
             }
         }
         P->setPoint(i, j); // Actual Point of function
+    }
+}
+
+/// @brief Find Pointset P of Points that approximate the linear function func_lin()
+/// on a given grid G and domain D.
+/// @param G Grid Struct
+/// @param D Domain Struct
+/// @param P Point Set
+/// @param func_lin Function Pointer
+/// @param angle Angle of Linear Function. Determines direction of search algorith
+void funcDiscrete(grid G, domain D, pointSet *P, double (*func_lin)(double), double angle) {
+    if (angle <= 45) {
+        funcDiscrete(G, D, P, func_lin);
+    } else {
+        int i = D.i_min;
+        for (int j = D.j_min; j < D.j_max; j++) {
+            int counter = 0;
+            double x = D.x_min + (((j * G.Dy) - D.y_min) * (D.x_max - D.x_min)) / (func_lin(D.x_max) - D.y_min);
+            printf("%lf %lf\n",x,(j * G.Dy));
+            if (x > G.L)
+                break;
+            double x_next = D.x_min + ((((j + 1) * G.Dy) - D.y_min) * (D.x_max - D.x_min)) / (D.y_max - D.y_min);
+            if (x_next > x) {
+                while (fabs((i + 1) * G.Dx - x) < fabs(x - i * G.Dx)) {
+                    i++, counter++;
+                    if (i + 1 > G.N)
+                        break;
+                }
+            } else {
+                while (fabs((i - 1) * G.Dx - x) < fabs(x - i * G.Dx)) {
+                    i--, counter++;
+                    if (i - 1 < 0)
+                        break;
+                }
+            }
+
+            if (counter > 1 && j + 1 > 1) {
+                for (int k = 1; k <= floor(counter / 2.0); k++) {
+                    P->setPoint(i - counter + k, j - 1); // Filler Points at i-1
+                }
+                for (int k = floor(counter / 2.0) + 1; k <= counter - 1; k++) {
+                    P->setPoint(i - counter + k, j); // Filler Points at i+1
+                }
+            }
+            P->setPoint(i, j); // Actual Point of function
+        }
     }
 }
 
