@@ -202,7 +202,6 @@ void funcDiscrete(grid G, domain D, pointSet *P, double (*func_lin)(double), dou
         for (int j = D.j_min; j < D.j_max; j++) {
             int counter = 0;
             double x = D.x_min + (((j * G.Dy) - D.y_min) * (D.x_max - D.x_min)) / (func_lin(D.x_max) - D.y_min);
-            printf("%lf %lf\n",x,(j * G.Dy));
             if (x > G.L)
                 break;
             double x_next = D.x_min + ((((j + 1) * G.Dy) - D.y_min) * (D.x_max - D.x_min)) / (D.y_max - D.y_min);
