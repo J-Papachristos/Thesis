@@ -12,3 +12,4 @@ testerModule:
 clean:
 	erase .\*.exe
 	erase .\libs\*.exe
+	erase A_sparse.txt b.txt x.txt
