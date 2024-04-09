@@ -1,16 +1,44 @@
-#include "libs/Sparse.h"
 #include "libs/FunctionDiscretize.h"
+#include "libs/Sparse.h"
 
 #define X_SIZE (sizeof(double) * N * N)
 #define A_SIZE (X_SIZE * N * N)
 #define b2Mb(X) (((X) / 1024) / 1024)
 #define deg2rad(X) ((X) * (M_PI / 180.0))
 
+#define cosd(X) (cos(deg2rad(X)))
+#define sind(X) (sin(deg2rad(X)))
+#define tand(X) (tan(deg2rad(X)))
+
 #define L 1.0   // [m]
 #define H 1.0   // [m]
 #define t 0.003 // [m]
 
-#define N_SOURCES 1 // Number of Sources
+// Crack Data (Global for Function use)
+double x_c0, y_c0;  // [m]
+double crack_angle; // [°]
+double crack_len;   // [m]
+double crack_thick; // [m]
+
+// Crack Line Function
+// https://www.desmos.com/calculator/lzaux1uudo
+
+// Domain : x_c0 - (L/2)*cos(a) - (t/2)*sin(a) : x_c0 + (L/2)*cos(a) - (t/2)*sin(a)
+double crackLineLeft(double x) {
+    return (y_c0 + (crack_thick / cosd(crack_angle) / 2.0)) + tand(crack_angle) * (x - x_c0);
+}
+// Domain : x_c0 - (L/2)*cos(a) + (t/2)*sin(a) : x_c0 + (L/2)*cos(a) + (t/2)*sin(a)
+double crackLineRight(double x) {
+    return (y_c0 - (crack_thick / cosd(crack_angle) / 2.0)) + tand(crack_angle) * (x - x_c0);
+}
+// Domain : x_c0 + (L/2)*cos(a) - (t/2)*sin(a) : x_c0 + (L/2)*cos(a) + (t/2)*sin(a)
+double crackLineTop(double x) {
+    return y_c0 + tand(crack_angle + 90) * (x - x_c0 - crack_len / 2.0 * cosd(crack_angle));
+}
+// Domain : x_c0 - (L/2)*cos(a) - (t/2)*sin(a) : x_c0 - (L/2)*cos(a) + (t/2)*sin(a)
+double crackLineBottom(double x) {
+    return y_c0 - tand(crack_angle + 90) * (x - x_c0 + crack_len / 2.0 * cosd(crack_angle));
+}
 
 int main(int argc, char const *argv[]) {
     /// Mesh Data :
@@ -63,8 +91,6 @@ int main(int argc, char const *argv[]) {
     }
 
     /// Crack Data :
-    double x_c0, y_c0;
-    double crack_len, crack_thick;
     int is_cracked;
     fscanf(fp_init, "is_cracked %d\n", &is_cracked);
     if (is_cracked) {
