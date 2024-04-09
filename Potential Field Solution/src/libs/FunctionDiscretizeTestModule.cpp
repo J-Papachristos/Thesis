@@ -14,6 +14,6 @@ int main(int argc, char const *argv[]) {
     pointSet P(1);
     funcDiscrete(G, D, &P, &linear, 85);
     P.printPointSet();
-
+    P.free_point_set();
     return 0;
 }
