@@ -48,6 +48,9 @@ int main(int argc, char const *argv[]) {
     double Dy = H / M, Dy2 = Dy * Dy;
     double Dx2Dy2 = Dx2 * Dy2;
 
+    // Create Grid Struct
+    grid G(L, H, N, M);
+
     // Data Structure Initialization
     Sparse *A_sp = (Sparse *) malloc(N * M * sizeof(Sparse));
     for (int i = 0; i < N * M; i++) {
@@ -97,11 +100,11 @@ int main(int argc, char const *argv[]) {
         fscanf(fp_init, "crack_pos %lf %lf\n", &x_c0, &y_c0);
         fscanf(fp_init, "crack_len %lf\n", &crack_len);
         fscanf(fp_init, "crack_thick %lf\n", &crack_thick);
+        fscanf(fp_init, "crack_angle %lf\n", &crack_angle);
     } else {
         x_c0 = y_c0 = 0;
         crack_len = crack_thick = 0;
     }
-
     int i_c0 = x_c0 / Dx, j_c0 = y_c0 / Dy;
 
     int i_min_crack = i_c0 - (int) ceil(crack_thick / 2.0 / Dx);
@@ -109,6 +112,43 @@ int main(int argc, char const *argv[]) {
 
     int j_min_crack = j_c0 - (int) ceil(crack_len / 2.0 / Dy);
     int j_max_crack = j_c0 + (int) ceil(crack_len / 2.0 / Dy);
+
+    domain D_left(x_c0 - (cosd(crack_angle) * crack_len / 2.0) - (sind(crack_angle) * crack_thick / 2.0),
+                  x_c0 + (cosd(crack_angle) * crack_len / 2.0) - (sind(crack_angle) * crack_thick / 2.0),
+                  &crackLineLeft);
+    D_left.calcIndex(G);
+    domain D_right(x_c0 - (cosd(crack_angle) * crack_len / 2.0) + (sind(crack_angle) * crack_thick / 2.0),
+                   x_c0 + (cosd(crack_angle) * crack_len / 2.0) + (sind(crack_angle) * crack_thick / 2.0),
+                   &crackLineRight);
+    D_right.calcIndex(G);
+    domain D_top(x_c0 + (cosd(crack_angle) * crack_len / 2.0) - (sind(crack_angle) * crack_thick / 2.0),
+                 x_c0 + (cosd(crack_angle) * crack_len / 2.0) + (sind(crack_angle) * crack_thick / 2.0),
+                 &crackLineTop);
+    D_top.calcIndex(G);
+    domain D_bottom(x_c0 - (cosd(crack_angle) * crack_len / 2.0) - (sind(crack_angle) * crack_thick / 2.0),
+                    x_c0 - (cosd(crack_angle) * crack_len / 2.0) + (sind(crack_angle) * crack_thick / 2.0),
+                    &crackLineBottom);
+    D_bottom.calcIndex(G);
+
+    int init_points_long, init_points_short;
+    if (crack_angle > 45) {
+        init_points_long = MAX(D_left.j_max - D_left.j_min, D_right.j_max - D_right.j_min);
+        init_points_short = MAX(D_top.i_max - D_top.i_min, D_bottom.i_max - D_bottom.i_min);
+    } else {
+        init_points_long = MAX(D_left.i_max - D_left.i_min, D_right.i_max - D_right.i_min);
+        init_points_short = MAX(D_top.j_max - D_top.j_min, D_bottom.j_max - D_bottom.j_min);
+    }
+
+    pointSet P_left(init_points_long);
+    pointSet P_right(init_points_long);
+    pointSet P_top(init_points_short);
+    pointSet P_bottom(init_points_short);
+    if (crack_angle != 90) { // If 90°, no need for PointSets
+        funcDiscrete(G, D_left, &P_left, &crackLineLeft, crack_angle);
+        funcDiscrete(G, D_right, &P_right, &crackLineRight, crack_angle);
+        funcDiscrete(G, D_top, &P_top, &crackLineTop, crack_angle);
+        funcDiscrete(G, D_bottom, &P_bottom, &crackLineBottom, crack_angle);
+    }
 
     // Set Source/Sink Terms
     for (int i = 0; i < n_sources; i++) {
@@ -124,9 +164,9 @@ int main(int argc, char const *argv[]) {
     // Surface 3 : (L,M) -> (0,M)
     // Surface 4 : (0,M) -> (0,0)
     // Surface 5 : Crack, centered around (x_c0,y_c0) with
-    //              Length : crack_len
-    //              Thickness : crack_thickness
-    //              Angle : crack_angle
+    //             Length : crack_len
+    //             Thickness : crack_thickness
+    //             Angle : crack_angle
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < M; j++) {
             // S1 : -φ[i][2] + 4φ[i][1] - 3φ[i][0] = 0
@@ -162,62 +202,64 @@ int main(int argc, char const *argv[]) {
             }
 
             // S5 :
-            if (i == i_min_crack) { // Left Side of Crack
-                if (j > j_min_crack && j < j_max_crack) {
-                    A_sp[i + N * j].set((i - 0) + j * N, -3);
-                    A_sp[i + N * j].set((i - 1) + j * N, +4);
-                    A_sp[i + N * j].set((i - 2) + j * N, -1);
-                    continue;
+            if (crack_angle == 90) {    // Vertical Crack, don't use PointSets
+                if (i == i_min_crack) { // Left Side of Crack
+                    if (j > j_min_crack && j < j_max_crack) {
+                        A_sp[i + N * j].set((i - 0) + j * N, -3);
+                        A_sp[i + N * j].set((i - 1) + j * N, +4);
+                        A_sp[i + N * j].set((i - 2) + j * N, -1);
+                        continue;
+                    }
                 }
-            }
-            if (i == i_max_crack) { // Right Side of Crack
-                if (j > j_min_crack && j < j_max_crack) {
-                    A_sp[i + N * j].set((i + 0) + j * N, -3);
-                    A_sp[i + N * j].set((i + 1) + j * N, +4);
-                    A_sp[i + N * j].set((i + 2) + j * N, -1);
-                    continue;
+                if (i == i_max_crack) { // Right Side of Crack
+                    if (j > j_min_crack && j < j_max_crack) {
+                        A_sp[i + N * j].set((i + 0) + j * N, -3);
+                        A_sp[i + N * j].set((i + 1) + j * N, +4);
+                        A_sp[i + N * j].set((i + 2) + j * N, -1);
+                        continue;
+                    }
                 }
-            }
-            if (j == j_min_crack) { // Bottom Side of Crack
-                if (i > i_min_crack && i < i_max_crack) {
-                    A_sp[i + N * j].set(i + N * (j - 0), -3);
-                    A_sp[i + N * j].set(i + N * (j - 1), +4);
-                    A_sp[i + N * j].set(i + N * (j - 2), -1);
-                    continue;
+                if (j == j_min_crack) { // Bottom Side of Crack
+                    if (i > i_min_crack && i < i_max_crack) {
+                        A_sp[i + N * j].set(i + N * (j - 0), -3);
+                        A_sp[i + N * j].set(i + N * (j - 1), +4);
+                        A_sp[i + N * j].set(i + N * (j - 2), -1);
+                        continue;
+                    }
                 }
-            }
-            if (j == j_max_crack) { // Top Side of Crack
-                if (i > i_min_crack && i < i_max_crack) {
-                    A_sp[i + N * j].set(i + N * (j + 0), -3);
-                    A_sp[i + N * j].set(i + N * (j + 1), +4);
-                    A_sp[i + N * j].set(i + N * (j + 2), -1);
-                    continue;
+                if (j == j_max_crack) { // Top Side of Crack
+                    if (i > i_min_crack && i < i_max_crack) {
+                        A_sp[i + N * j].set(i + N * (j + 0), -3);
+                        A_sp[i + N * j].set(i + N * (j + 1), +4);
+                        A_sp[i + N * j].set(i + N * (j + 2), -1);
+                        continue;
+                    }
                 }
-            }
 
-            if (i == i_min_crack && j == j_min_crack) { // Bottom Left Corner
-                A_sp[i + N * j].set(i + N * j, 1);
-                continue;
-            }
-            if (i == i_max_crack && j == j_min_crack) { // Bottom Right Corner
-                A_sp[i + N * j].set(i + N * j, 1);
-                continue;
-            }
-            if (i == i_min_crack && j == j_max_crack) { // Top Left Corner
-                A_sp[i + N * j].set(i + N * j, 1);
-                continue;
-            }
-            if (i == i_max_crack && j == j_max_crack) { // Top Right Corner
-                A_sp[i + N * j].set(i + N * j, 1);
-                continue;
-            }
+                if (i == i_min_crack && j == j_min_crack) { // Bottom Left Corner
+                    A_sp[i + N * j].set(i + N * j, 1);
+                    continue;
+                }
+                if (i == i_max_crack && j == j_min_crack) { // Bottom Right Corner
+                    A_sp[i + N * j].set(i + N * j, 1);
+                    continue;
+                }
+                if (i == i_min_crack && j == j_max_crack) { // Top Left Corner
+                    A_sp[i + N * j].set(i + N * j, 1);
+                    continue;
+                }
+                if (i == i_max_crack && j == j_max_crack) { // Top Right Corner
+                    A_sp[i + N * j].set(i + N * j, 1);
+                    continue;
+                }
 
-            if ((i > i_min_crack && i < i_max_crack) &&
-                (j > j_min_crack && j < j_max_crack)) {
-                A_sp[i + N * j].set(i + N * j, 1);
-                continue;
+                if ((i > i_min_crack && i < i_max_crack) &&
+                    (j > j_min_crack && j < j_max_crack)) {
+                    A_sp[i + N * j].set(i + N * j, 1);
+                    continue;
+                }
+            } else { // Angled Crack, use PointSets
             }
-
             // Inner Nodes
             if (i > 0 && j > 0 && i < N - 1 && j < M - 1) {
                 A_sp[i + N * j].set(i + j * N, -2 * (Dx2 + Dy2) / Dx2Dy2);
