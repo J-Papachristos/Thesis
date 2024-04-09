@@ -13,10 +13,7 @@ int main(int argc, char const *argv[]) {
 
     pointSet P(1);
     funcDiscrete(G, D, &P, &linear, 85);
-    printf("%d\n",P.n_points);
-    for (int i = 0; i < P.n_points; i++) {
-        printf("%lf %lf\n", P.i[i], P.j[i]);
-    }
+    P.printPointSet();
 
     return 0;
 }
