@@ -65,6 +65,10 @@ typedef struct point_set {
 
     /// @brief Utility for debug, prints all Points in Point Set
     void printPointSet() {
+        if (this->n_points == 0) {
+            printf("NULL POINTSET\n");
+            return;
+        }
         for (int k = 0; k < this->n_points; k++)
             printf("[%d] : (%lf, %lf)\n", k, this->i[k], this->j[k]);
     }
