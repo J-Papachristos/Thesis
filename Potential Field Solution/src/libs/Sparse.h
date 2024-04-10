@@ -75,6 +75,15 @@ typedef struct sparse_row {
         }
         return 0;
     }
+
+    void clear() {
+        this->n_cols = 1;
+        this->n_nz = 1;
+        this->c = (int *) malloc(n_cols * sizeof(int));
+        this->v = (double *) malloc(n_cols * sizeof(double));
+        memset(this->c, -1, n_cols * sizeof(int)); // Set to -1 as indicator of NULL Value
+        memset(this->v, 0, n_cols * sizeof(double));
+    }
 } Sparse;
 
 #endif // !_LIB_SPARSE_
