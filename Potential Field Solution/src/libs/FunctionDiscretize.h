@@ -205,9 +205,9 @@ void funcDiscrete(grid G, domain D, pointSet *P, double (*func)(double)) {
 /// @param func_lin Function Pointer
 /// @param angle Angle of Linear Function. Determines direction of search algorith
 void funcDiscrete(grid G, domain D, pointSet *P, double (*func_lin)(double), double angle) {
-    if (angle <= 45) {
+    if (0 <= angle && angle <= 45) {
         funcDiscrete(G, D, P, func_lin);
-    } else {
+    } else if (angle > 45 && angle < 90) {
         int i = D.i_min;
         for (int j = D.j_min; j < D.j_max; j++) {
             int counter = 0;
@@ -224,7 +224,7 @@ void funcDiscrete(grid G, domain D, pointSet *P, double (*func_lin)(double), dou
             } else {
                 while (fabs((i - 1) * G.Dx - x) < fabs(x - i * G.Dx)) {
                     i--, counter++;
-                    if (i - 1 < 0)
+                    if (i - 1 < D.i_min)
                         break;
                 }
             }
@@ -235,6 +235,39 @@ void funcDiscrete(grid G, domain D, pointSet *P, double (*func_lin)(double), dou
                 }
                 for (int k = floor(counter / 2.0) + 1; k <= counter - 1; k++) {
                     P->setPoint(i - counter + k, j); // Filler Points at i+1
+                }
+            }
+            P->setPoint(i, j); // Actual Point of function
+        }
+    } else if (angle > 90 && angle < 180) {
+        int i = D.i_min;
+        for (int j = D.j_min; j < D.j_max; j++) {
+            if (i - 1 <= D.i_min) {
+                break;
+            }
+            int counter = 0;
+            double x = D.x_min + (((j * G.Dy) - D.y_min) * (D.x_max - D.x_min)) / (func_lin(D.x_max) - D.y_min);
+            if (x > G.L)
+                break;
+            double x_next = D.x_min + ((((j + 1) * G.Dy) - D.y_min) * (D.x_max - D.x_min)) / (D.y_max - D.y_min);
+            if (x_next > x) {
+                while (fabs((i + 1) * G.Dx - x) < fabs(x - i * G.Dx)) {
+                    i++, counter++;
+                }
+            } else {
+                while (fabs((i - 1) * G.Dx - x) < fabs(x - i * G.Dx)) {
+                    i--, counter++;
+                    if (i - 1 < D.i_min)
+                        break;
+                }
+            }
+
+            if (counter > 1 && j + 1 > 1) {
+                for (int k = 1; k <= floor(counter / 2.0); k++) {
+                    P->setPoint(i + counter - k, j - 1); // Filler Points at i-1
+                }
+                for (int k = floor(counter / 2.0) + 1; k <= counter - 1; k++) {
+                    P->setPoint(i + counter - k, j); // Filler Points at i+1
                 }
             }
             P->setPoint(i, j); // Actual Point of function
