@@ -21,7 +21,7 @@ double crack_len;   // [m]
 double crack_thick; // [m]
 
 // Crack Line Function
-// https://www.desmos.com/calculator/lzaux1uudo
+// https://www.desmos.com/calculator/rthhj6yoh6
 
 // Domain : x_c0 - (L/2)*cos(a) - (t/2)*sin(a) : x_c0 + (L/2)*cos(a) - (t/2)*sin(a)
 double crackLineLeft(double x) {
@@ -33,18 +33,19 @@ double crackLineRight(double x) {
 }
 // Domain : x_c0 + (L/2)*cos(a) - (t/2)*sin(a) : x_c0 + (L/2)*cos(a) + (t/2)*sin(a)
 double crackLineTop(double x) {
-    return y_c0 + tand(crack_angle + 90) * (x - x_c0 - crack_len / 2.0 * cosd(crack_angle));
+    return y_c0 + (crack_len / 2.0 * sind(crack_angle)) + tand(crack_angle + 90) * (x - x_c0 - crack_len / 2.0 * cosd(crack_angle));
 }
 // Domain : x_c0 - (L/2)*cos(a) - (t/2)*sin(a) : x_c0 - (L/2)*cos(a) + (t/2)*sin(a)
 double crackLineBottom(double x) {
-    return y_c0 - tand(crack_angle + 90) * (x - x_c0 + crack_len / 2.0 * cosd(crack_angle));
+    return y_c0 - (crack_len / 2.0 * sind(crack_angle)) + tand(crack_angle + 90) * (x - x_c0 + crack_len / 2.0 * cosd(crack_angle));
 }
 
 enum sideEnum {
     LEFT = 0,
     RIGHT = 1,
     TOP = 2,
-    BOTTOM = 3
+    BOTTOM = 3,
+    SIDE_SIZE
 };
 
 int main(int argc, char const *argv[]) {
@@ -122,19 +123,19 @@ int main(int argc, char const *argv[]) {
 
     domain D_left(x_c0 - (cosd(crack_angle) * crack_len / 2.0) - (sind(crack_angle) * crack_thick / 2.0),
                   x_c0 + (cosd(crack_angle) * crack_len / 2.0) - (sind(crack_angle) * crack_thick / 2.0),
-                  &crackLineLeft);
+                  &crackLineLeft, true);
     D_left.calcIndex(G);
     domain D_right(x_c0 - (cosd(crack_angle) * crack_len / 2.0) + (sind(crack_angle) * crack_thick / 2.0),
                    x_c0 + (cosd(crack_angle) * crack_len / 2.0) + (sind(crack_angle) * crack_thick / 2.0),
-                   &crackLineRight);
+                   &crackLineRight, true);
     D_right.calcIndex(G);
     domain D_top(x_c0 + (cosd(crack_angle) * crack_len / 2.0) - (sind(crack_angle) * crack_thick / 2.0),
                  x_c0 + (cosd(crack_angle) * crack_len / 2.0) + (sind(crack_angle) * crack_thick / 2.0),
-                 &crackLineTop);
+                 &crackLineTop, false);
     D_top.calcIndex(G);
     domain D_bottom(x_c0 - (cosd(crack_angle) * crack_len / 2.0) - (sind(crack_angle) * crack_thick / 2.0),
                     x_c0 - (cosd(crack_angle) * crack_len / 2.0) + (sind(crack_angle) * crack_thick / 2.0),
-                    &crackLineBottom);
+                    &crackLineBottom, false);
     D_bottom.calcIndex(G);
 
     int init_points_long, init_points_short;
@@ -146,17 +147,15 @@ int main(int argc, char const *argv[]) {
         init_points_short = MAX(D_top.j_max - D_top.j_min, D_bottom.j_max - D_bottom.j_min);
     }
 
-    pointSet P_left(init_points_long);
-    pointSet P_right(init_points_long);
-    pointSet P_top(init_points_short);
-    pointSet P_bottom(init_points_short);
+    pointSet P_left(init_points_long), P_right(init_points_long);
+    pointSet P_top(init_points_short), P_bottom(init_points_short);
     if (crack_angle != 90) { // If 90°, no need for PointSets
         funcDiscrete(G, D_left, &P_left, &crackLineLeft, crack_angle);
         funcDiscrete(G, D_right, &P_right, &crackLineRight, crack_angle);
         funcDiscrete(G, D_top, &P_top, &crackLineTop, crack_angle + 90);
         funcDiscrete(G, D_bottom, &P_bottom, &crackLineBottom, crack_angle + 90);
     }
-    pointSet *P[4] = {&P_left, &P_right, &P_top, &P_bottom}; // Define List of PointSets
+    pointSet *P[SIDE_SIZE] = {&P_left, &P_right, &P_top, &P_bottom}; // Define List of PointSets
 
     // Set Source/Sink Terms
     for (int i = 0; i < n_sources; i++) {
@@ -277,50 +276,52 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    for (int side = LEFT; side <= BOTTOM; side++) {
-        int i = P[side]->i[0];
-        int j = P[side]->j[0];
-        A_sp[i + N * j].set(i + N * j, 1);
-        i = P[side]->i[P[side]->n_points - 1];
-        j = P[side]->j[P[side]->n_points - 1];
-        A_sp[i + N * j].set(i + N * j, 1);
-        for (int point = 1; point < P[side]->n_points - 1; point++) {
-            int i = P[side]->i[point];
-            int j = P[side]->j[point];
+    if (crack_angle != 90) {
+        for (int side = LEFT; side <= BOTTOM; side++) {
+            int i = P[side]->i[0], j = P[side]->j[0];
             A_sp[i + N * j].clear();
-            switch (side) {
-            case LEFT:
-                A_sp[i + N * j].set((i - 0) + j * N, -3 * (-sind(crack_angle)));
-                A_sp[i + N * j].set((i - 1) + j * N, +4 * (-sind(crack_angle)));
-                A_sp[i + N * j].set((i - 2) + j * N, -1 * (-sind(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j + 0), -3 * (cosd(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j + 1), +4 * (cosd(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j + 2), -1 * (cosd(crack_angle)));
-                break;
-            case RIGHT:
-                A_sp[i + N * j].set((i + 0) + j * N, -3 * (sind(crack_angle)));
-                A_sp[i + N * j].set((i + 1) + j * N, +4 * (sind(crack_angle)));
-                A_sp[i + N * j].set((i + 2) + j * N, -1 * (sind(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j - 0), -3 * (-cosd(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j - 1), +4 * (-cosd(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j - 2), -1 * (-cosd(crack_angle)));
-                break;
-            case TOP:
-                A_sp[i + N * j].set((i + 0) + j * N, -3 * (cosd(crack_angle)));
-                A_sp[i + N * j].set((i + 1) + j * N, +4 * (cosd(crack_angle)));
-                A_sp[i + N * j].set((i + 2) + j * N, -1 * (cosd(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j + 0), -3 * (sind(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j + 1), +4 * (sind(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j + 2), -1 * (sind(crack_angle)));
-                break;
-            case BOTTOM:
-                A_sp[i + N * j].set((i - 0) + j * N, -3 * (-cosd(crack_angle)));
-                A_sp[i + N * j].set((i - 1) + j * N, +4 * (-cosd(crack_angle)));
-                A_sp[i + N * j].set((i - 2) + j * N, -1 * (-cosd(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j - 0), -3 * (-sind(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j - 1), +4 * (-sind(crack_angle)));
-                A_sp[i + N * j].set(i + N * (j - 2), -1 * (-sind(crack_angle)));
-                break;
+            A_sp[i + N * j].set(i + N * j, 1);
+            i = P[side]->i[P[side]->n_points - 1], j = P[side]->j[P[side]->n_points - 1];
+            A_sp[i + N * j].clear();
+            A_sp[i + N * j].set(i + N * j, 1);
+            for (int point = 1; point < P[side]->n_points - 1; point++) {
+                int i = P[side]->i[point];
+                int j = P[side]->j[point];
+                A_sp[i + N * j].clear();
+                switch (side) {
+                case LEFT:
+                    A_sp[i + N * j].add((i - 0) + j * N, -3 * (sind(crack_angle)));
+                    A_sp[i + N * j].add((i - 1) + j * N, +4 * (sind(crack_angle)));
+                    A_sp[i + N * j].add((i - 2) + j * N, -1 * (sind(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j + 0), -3 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j + 1), +4 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j + 2), -1 * (cosd(crack_angle)));
+                    break;
+                case RIGHT:
+                    A_sp[i + N * j].add((i + 0) + j * N, -3 * (sind(crack_angle)));
+                    A_sp[i + N * j].add((i + 1) + j * N, +4 * (sind(crack_angle)));
+                    A_sp[i + N * j].add((i + 2) + j * N, -1 * (sind(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j - 0), -3 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j - 1), +4 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j - 2), -1 * (cosd(crack_angle)));
+                    break;
+                case TOP:
+                    A_sp[i + N * j].add((i + 0) + j * N, -3 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add((i + 1) + j * N, +4 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add((i + 2) + j * N, -1 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j + 0), -3 * (sind(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j + 1), +4 * (sind(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j + 2), -1 * (sind(crack_angle)));
+                    break;
+                case BOTTOM:
+                    A_sp[i + N * j].add((i - 0) + j * N, -3 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add((i - 1) + j * N, +4 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add((i - 2) + j * N, -1 * (cosd(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j - 0), -3 * (sind(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j - 1), +4 * (sind(crack_angle)));
+                    A_sp[i + N * j].add(i + N * (j - 2), -1 * (sind(crack_angle)));
+                    break;
+                }
             }
         }
     }
