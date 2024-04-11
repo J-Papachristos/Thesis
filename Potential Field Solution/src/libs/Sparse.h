@@ -3,8 +3,8 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX(X, Y) ((X) > (Y) ? (X) : (Y))
 #define MIN(X, Y) ((X) > (Y) ? (Y) : (X))
@@ -72,6 +72,23 @@ typedef struct sparse_row {
                 this->v[n_nz - 1] = 0;  // Init
                 this->n_cols++;         // Increment Check Value
             }
+        }
+        return 0;
+    }
+
+    int add(int j, double val) {
+        if (j > this->max_cols || j < 0) // If not in Bounds
+            return -1;
+        if (val == 0) // Only for Non-Zero Values
+            return -1;
+
+        if ((*this)[j]) { // If pair (j,v) already exists in Row
+            for (int i = 0; i < this->n_nz; i++) {
+                if (this->c[i] == j)
+                    this->v[i] += val;
+            }
+        } else {
+            this->set(j, val);
         }
         return 0;
     }
