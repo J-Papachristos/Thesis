@@ -131,12 +131,18 @@ typedef struct domain_ {
 
     /// @brief Constructor (Only X Coordinate Range needed)
     /// @param func Function pointer to a function of the form y = f(x)
-    /// @warning Assumes function's y_min, y_max are at x_min, x_max
-    domain_(double x_min, double x_max, double (*func)(double)) {
+    /// @param asc If True : Function is Ascending, If False, Function is Descending
+    /// @warning Assumes function is monotonous
+    domain_(double x_min, double x_max, double (*func)(double), bool asc) {
         this->x_min = x_min;
         this->x_max = x_max;
-        this->y_min = func(x_min);
-        this->y_max = func(x_max);
+        if (asc) {
+            this->y_min = func(x_min);
+            this->y_max = func(x_max);
+        } else {
+            this->y_min = func(x_max);
+            this->y_max = func(x_min);
+        }
     }
 
     /// @brief Constructor (Full)
@@ -240,16 +246,16 @@ void funcDiscrete(grid G, domain D, pointSet *P, double (*func_lin)(double), dou
             P->setPoint(i, j); // Actual Point of function
         }
     } else if (angle > 90 && angle < 180) {
-        int i = D.i_min;
+        int i = D.i_max;
         for (int j = D.j_min; j < D.j_max; j++) {
             if (i - 1 <= D.i_min) {
                 break;
             }
             int counter = 0;
-            double x = D.x_min + (((j * G.Dy) - D.y_min) * (D.x_max - D.x_min)) / (func_lin(D.x_max) - D.y_min);
+            double x = D.x_min + (((j * G.Dy) - D.y_max) * (D.x_max - D.x_min)) / (D.y_min - D.y_max);
             if (x > G.L)
                 break;
-            double x_next = D.x_min + ((((j + 1) * G.Dy) - D.y_min) * (D.x_max - D.x_min)) / (D.y_max - D.y_min);
+            double x_next = D.x_min + ((((j + 1) * G.Dy) - D.y_max) * (D.x_max - D.x_min)) / (D.y_min - D.y_max);
             if (x_next > x) {
                 while (fabs((i + 1) * G.Dx - x) < fabs(x - i * G.Dx)) {
                     i++, counter++;
