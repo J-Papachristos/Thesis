@@ -10,9 +10,9 @@
 #define sind(X) (sin(deg2rad(X)))
 #define tand(X) (tan(deg2rad(X)))
 
-#define L 1.0   // [m]
-#define H 1.0   // [m]
-#define t 0.003 // [m]
+#define L (400.0 * 1e-3) // [m]
+#define H (250.0 * 1e-3) // [m]
+#define t (3.100 * 1e-3) // [m]
 
 // Crack Data (Global for Function use)
 double x_c0, y_c0;  // [m]
@@ -52,7 +52,7 @@ int main(int argc, char const *argv[]) {
     /// Mesh Data :
     int N = atoi(argv[1]);
     double Dx = L / N, Dx2 = Dx * Dx;
-    int M = argc > 2 ? atoi(argv[2]) : (int) (H / L) * N;
+    int M = argc > 2 ? atoi(argv[2]) : (int) ((H / L) * N);
     double Dy = H / M, Dy2 = Dy * Dy;
     double Dx2Dy2 = Dx2 * Dy2;
 
@@ -74,9 +74,9 @@ int main(int argc, char const *argv[]) {
     double I;
     fscanf(fp_init, "I %lf\n", &I);
     // Source/Sink Data :
-    I = I / Dx / Dy;           // [A/m^2]
-    double sigma = 38e6 * t;   // [siemens/m^2] * [m] = [A/Vm^2]
-    double source = I / sigma; // [A/m^2] / [A/Vm^2] = [V]
+    I = I / Dx / Dy;                  // [A/m^2]
+    double sigma = 7476688.272623353 * t; // [siemens/m^2] * [m] = [A/Vm^2]
+    double source = I / sigma;        // [A/m^2] / [A/Vm^2] = [V]
 
     int n_sources, n_sinks;
     double x_source[1], y_source[1];
