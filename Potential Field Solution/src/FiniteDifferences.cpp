@@ -74,9 +74,9 @@ int main(int argc, char const *argv[]) {
     double I;
     fscanf(fp_init, "I %lf\n", &I);
     // Source/Sink Data :
-    I = I / Dx / Dy;                  // [A/m^2]
+    I = I / Dx / Dy;                      // [A/m^2]
     double sigma = 7476688.272623353 * t; // [siemens/m^2] * [m] = [A/Vm^2]
-    double source = I / sigma;        // [A/m^2] / [A/Vm^2] = [V]
+    double source = I / sigma;            // [A/m^2] / [A/Vm^2] = [V]
 
     int n_sources, n_sinks;
     double x_source[1], y_source[1];
@@ -344,7 +344,7 @@ int main(int argc, char const *argv[]) {
     fclose(fp_b);
 
     // Solve Sparse Linear System
-    system("C:\\Users\\John\\miniforge3\\python.exe .\\SparseSolver.py");
+    system("C:\\Miniforge3\\python.exe .\\SparseSolver.py");
 
     for (int i = 0; i < N * M; i++) {
         A_sp[i].free_sparse_row();
