@@ -10,6 +10,6 @@ testerModule:
 	$(CPP) $(CPP_FLAGS) .\libs\FunctionDiscretizeTestModule.cpp -O2 -o .\libs\FunctionDiscretizeTestModule.exe
 
 clean:
-	erase .\*.exe
-	erase .\libs\*.exe
-	erase A_sparse.txt b.txt x.txt
+	rm -f *.exe
+	rm -f libs\*.exe
+	rm -f A_sparse.txt b.txt x.txt
