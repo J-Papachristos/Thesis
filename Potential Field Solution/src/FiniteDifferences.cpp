@@ -352,5 +352,5 @@ int main(int argc, char const *argv[]) {
     free(A_sp);
     free(b);
     free(x);
-    return 0;
+    return M != N ? M : 0;
 }
