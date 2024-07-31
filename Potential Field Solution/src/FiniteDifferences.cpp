@@ -194,9 +194,9 @@ int main(int argc, char const *argv[]) {
 
             // S3 : φ[i][N-3] - 4φ[i][N-2] + 3φ[i][N-1] = 0
             if (i > 0 && j == M - 1) {
-                A_sp[i + N * j].set(i + (N - 1) * N, -3);
-                A_sp[i + N * j].set(i + (N - 2) * N, +4);
-                A_sp[i + N * j].set(i + (N - 3) * N, -1);
+                A_sp[i + N * j].set(i + (M - 1) * N, -3);
+                A_sp[i + N * j].set(i + (M - 2) * N, +4);
+                A_sp[i + N * j].set(i + (M - 3) * N, -1);
                 continue;
             }
 
