@@ -10,9 +10,10 @@
 #define sind(X) (sin(deg2rad(X)))
 #define tand(X) (tan(deg2rad(X)))
 
-#define L (400.0 * 1e-3) // [m]
-#define H (250.0 * 1e-3) // [m]
-#define t (3.100 * 1e-3) // [m]
+#define L (400.0 * 1e-3)  // Lengt              [m]
+#define H (250.0 * 1e-3)  // Height             [m]
+#define t (3.100 * 1e-3)  // Thickness          [m]
+#define r (30.000 * 1e-3) // Source/Sink Radius [m]
 
 // Crack Data (Global for Function use)
 double x_c0, y_c0;  // [m]
@@ -158,11 +159,26 @@ int main(int argc, char const *argv[]) {
     pointSet *P[SIDE_SIZE] = {&P_left, &P_right, &P_top, &P_bottom}; // Define List of PointSets
 
     // Set Source/Sink Terms
-    for (int i = 0; i < n_sources; i++) {
-        b[i_source[i] + j_source[i] * N] = source;
+    double xr = (r / Dx);
+    double yr = (r / Dy);
+    for (int k = 0; k < n_sources; k++) {
+        for (int i = i_source[k] - xr; i < i_source[k] + xr; i++) {
+            for (int j = j_source[k] - yr; j < j_source[k] + yr; j++) {
+                if (sqrt((i - i_source[k]) * (i - i_source[k]) * Dx2 + (j - j_source[k]) * (j - j_source[k]) * Dy2) <= r) {
+                    b[i + j * N] = source / (M_PI * xr * yr);
+                }
+            }
+        }
     }
-    for (int i = 0; i < n_sinks; i++) {
-        b[i_sink[i] + j_sink[i] * N] = -source;
+
+    for (int k = 0; k < n_sources; k++) {
+        for (int i = i_sink[k] - xr; i < i_sink[k] + xr; i++) {
+            for (int j = j_sink[k] - yr; j < j_sink[k] + yr; j++) {
+                if (sqrt((i - i_sink[k]) * (i - i_sink[k]) * Dx2 + (j - j_sink[k]) * (j - j_sink[k]) * Dy2) <= r) {
+                    b[i + j * N] = -source / (M_PI * xr * yr);
+                }
+            }
+        }
     }
 
     //// Neumann Boundary Conditions :
