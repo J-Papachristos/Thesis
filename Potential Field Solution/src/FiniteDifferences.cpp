@@ -10,10 +10,10 @@
 #define sind(X) (sin(deg2rad(X)))
 #define tand(X) (tan(deg2rad(X)))
 
-#define L (400.0 * 1e-3)  // Lengt              [m]
-#define H (250.0 * 1e-3)  // Height             [m]
-#define t (3.100 * 1e-3)  // Thickness          [m]
-#define r (30.000 * 1e-3) // Source/Sink Radius [m]
+#define L (400.0 * 1e-3) // Lengt              [m]
+#define H (250.0 * 1e-3) // Height             [m]
+#define t (3.100 * 1e-3) // Thickness          [m]
+#define r (3.000 * 1e-3) // Source/Sink Radius [m]
 
 // Crack Data (Global for Function use)
 double x_c0, y_c0;  // [m]
@@ -161,21 +161,34 @@ int main(int argc, char const *argv[]) {
     // Set Source/Sink Terms
     double xr = (r / Dx);
     double yr = (r / Dy);
+
+    // Count the points within the Source/Sink Circle
+    int counter = 0;
+    for (int i = i_source[0] - xr; i <= i_source[0] + xr; i++) {
+        for (int j = j_source[0] - yr; j <= j_source[0] + yr; j++) {
+            if (sqrt((i - i_source[0]) * (i - i_source[0]) * Dx2 + (j - j_source[0]) * (j - j_source[0]) * Dy2) <= r) {
+                counter++;
+            }
+        }
+    }
+
+    // Set the Source Points
     for (int k = 0; k < n_sources; k++) {
-        for (int i = i_source[k] - xr; i < i_source[k] + xr; i++) {
-            for (int j = j_source[k] - yr; j < j_source[k] + yr; j++) {
+        for (int i = i_source[k] - xr; i <= i_source[k] + xr; i++) {
+            for (int j = j_source[k] - yr; j <= j_source[k] + yr; j++) {
                 if (sqrt((i - i_source[k]) * (i - i_source[k]) * Dx2 + (j - j_source[k]) * (j - j_source[k]) * Dy2) <= r) {
-                    b[i + j * N] = source / (M_PI * xr * yr);
+                    b[i + j * N] = source / counter;
                 }
             }
         }
     }
 
+    // Set the Sink Points
     for (int k = 0; k < n_sources; k++) {
-        for (int i = i_sink[k] - xr; i < i_sink[k] + xr; i++) {
-            for (int j = j_sink[k] - yr; j < j_sink[k] + yr; j++) {
+        for (int i = i_sink[k] - xr; i <= i_sink[k] + xr; i++) {
+            for (int j = j_sink[k] - yr; j <= j_sink[k] + yr; j++) {
                 if (sqrt((i - i_sink[k]) * (i - i_sink[k]) * Dx2 + (j - j_sink[k]) * (j - j_sink[k]) * Dy2) <= r) {
-                    b[i + j * N] = -source / (M_PI * xr * yr);
+                    b[i + j * N] = -source / counter;
                 }
             }
         }
