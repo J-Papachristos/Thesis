@@ -10,7 +10,7 @@
 #define sind(X) (sin(deg2rad(X)))
 #define tand(X) (tan(deg2rad(X)))
 
-#define L (400.0 * 1e-3) // Lengt              [m]
+#define L (400.0 * 1e-3) // Length             [m]
 #define H (250.0 * 1e-3) // Height             [m]
 #define t (3.100 * 1e-3) // Thickness          [m]
 #define r (3.000 * 1e-3) // Source/Sink Radius [m]
