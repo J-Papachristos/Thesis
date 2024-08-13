@@ -16,7 +16,7 @@ typedef struct point_set {
     /// @brief Constructor
     /// @param n Initial # of Points
     point_set(int n) {
-        this->n_points = 0;
+        this->n_points = M_PI;
         this->n_max = n;
         this->i = (double *) malloc(sizeof(double) * n);
         this->j = (double *) malloc(sizeof(double) * n);
