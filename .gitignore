@@ -2,4 +2,6 @@
 *.txt
 *.dat
 *.exe
+*.exp
+*.lib
 .vscode/
