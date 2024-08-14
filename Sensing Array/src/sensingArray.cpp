@@ -1,14 +1,51 @@
-#include "libs/PotentialSolve.h"
+#include "libs/FunctionDiscretize.h"
+#include "libs/Sparse.h"
+
+#define X_SIZE (sizeof(double) * N * N)
+#define A_SIZE (X_SIZE * N * N)
+#define deg2rad(X) ((X) * (M_PI / 180.0))
 
 #define L (2000.0 * 1e-3) // [m] Length
 #define H (500.0 * 1e-3)  // [m] Height
 #define t (3.0 * 1e-3)    // [m] Thickness
+
+#define cosd(X) (cos(deg2rad(X)))
+#define sind(X) (sin(deg2rad(X)))
+#define tand(X) (tan(deg2rad(X)))
 
 // Crack Data (Global for Function use)
 double x_c0, y_c0;  // [m]
 double crack_angle; // [°]
 double crack_len;   // [m]
 double crack_thick; // [m]
+
+// Crack Line Function
+// https://www.desmos.com/calculator/rthhj6yoh6
+
+// Domain : x_c0 - (L/2)*cos(a) - (t/2)*sin(a) : x_c0 + (L/2)*cos(a) - (t/2)*sin(a)
+double crackLineLeft(double x) {
+    return (y_c0 + (crack_thick / cosd(crack_angle) / 2.0)) + tand(crack_angle) * (x - x_c0);
+}
+// Domain : x_c0 - (L/2)*cos(a) + (t/2)*sin(a) : x_c0 + (L/2)*cos(a) + (t/2)*sin(a)
+double crackLineRight(double x) {
+    return (y_c0 - (crack_thick / cosd(crack_angle) / 2.0)) + tand(crack_angle) * (x - x_c0);
+}
+// Domain : x_c0 + (L/2)*cos(a) - (t/2)*sin(a) : x_c0 + (L/2)*cos(a) + (t/2)*sin(a)
+double crackLineTop(double x) {
+    return y_c0 + (crack_len / 2.0 * sind(crack_angle)) + tand(crack_angle + 90) * (x - x_c0 - crack_len / 2.0 * cosd(crack_angle));
+}
+// Domain : x_c0 - (L/2)*cos(a) - (t/2)*sin(a) : x_c0 - (L/2)*cos(a) + (t/2)*sin(a)
+double crackLineBottom(double x) {
+    return y_c0 - (crack_len / 2.0 * sind(crack_angle)) + tand(crack_angle + 90) * (x - x_c0 + crack_len / 2.0 * cosd(crack_angle));
+}
+
+enum sideEnum {
+    LEFT = 0,
+    RIGHT = 1,
+    TOP = 2,
+    BOTTOM = 3,
+    SIDE_SIZE
+};
 
 int main(int argc, char const *argv[]) {
     // Mesh Data :

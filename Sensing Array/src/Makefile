@@ -1,13 +1,13 @@
 CPP=g++
-CPP_FLAGS=-Wall -Wpedantic
+CPP_FLAGS=-Wall -Wpedantic -O2
 
 CUDA=nvcc
 CUDA_FLAGS=-O2
 
 all: sensingArray
 main: sensingArray
-sensingArray: sensingArray.cu
-	$(CUDA) $(CUDA_FLAGS) sensingArray.cu -o sensingArray.exe
+sensingArray: sensingArray.cpp
+	$(CPP) $(CPP_FLAGS) sensingArray.cpp -o sensingArray.exe
 
 clean:
 	rm -f *.exe
