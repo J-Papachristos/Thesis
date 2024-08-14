@@ -13,3 +13,4 @@ clean:
 	rm -f *.exe
 	rm -f *.exp
 	rm -f *.lib
+	rm -f *.txt
