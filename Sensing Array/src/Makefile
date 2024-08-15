@@ -5,9 +5,11 @@ CUDA=nvcc
 CUDA_FLAGS=-O2
 
 all: sensingArray
-main: sensingArray
+main: sensingArrayCuda
 sensingArray: sensingArray.cpp
 	$(CPP) $(CPP_FLAGS) sensingArray.cpp -o sensingArray.exe
+sensingArrayCuda: sensingArray.cu
+	$(CUDA) $(CUDA_FLAGS) sensingArray.cu -o sensingArray.exe
 
 clean:
 	rm -f *.exe
