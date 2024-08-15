@@ -237,7 +237,6 @@ int main(int argc, char const *argv[]) {
             }
         }
     }
-
     if (crack_angle != 90) {
         for (int side = LEFT; side <= BOTTOM; side++) {
             int i = P[side]->i[0], j = P[side]->j[0];
@@ -300,8 +299,8 @@ int main(int argc, char const *argv[]) {
     fclose(fp_A);
     free(A_sp);
 
-    // Invert Sparse Matrix A
-    system("C:\\Miniforge3\\Python\\python.exe .\\SparseMatrixInvert.py");
+    // Solve Sparse Linear System for Multiple b Vectors
+    system("C:\\Miniforge3\\Python\\python.exe .\\SparseMatrixSolveMultiple.py");
 
     return 0;
 }
