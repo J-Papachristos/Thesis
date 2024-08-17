@@ -71,7 +71,12 @@ int main(int argc, char const *argv[]) {
     }
 
     // Crack Data :
-    FILE *fp_init = fopen("input.dat", "r+");
+    FILE *fp_init = fopen(argc > 1 ? argv[1] : "input.dat", "r+");
+    if (!fp_init) {
+        printf("Wrong File!\n");
+        return -1;
+    }
+
     int is_cracked;
     fscanf(fp_init, "is_cracked %d\n", &is_cracked);
     if (is_cracked) {
@@ -237,7 +242,7 @@ int main(int argc, char const *argv[]) {
             }
         }
     }
-    if (crack_angle != 90) {
+    if (crack_angle != 90 && is_cracked) {
         for (int side = LEFT; side <= BOTTOM; side++) {
             int i = P[side]->i[0], j = P[side]->j[0];
             A_sp[i + N * j].clear();
@@ -300,8 +305,8 @@ int main(int argc, char const *argv[]) {
     free(A_sp);
 
     // Fill up {b} matrix for Multi-Solve
-    int N_sens = 16;
-    int M_sens = 10;
+    int N_sens = 26;
+    int M_sens = 12;
 
     FILE *fp_b = fopen("b_Sparse.txt", "w+");
     FILE *fp_v = fopen("v_Points.txt", "w+");
@@ -353,13 +358,13 @@ int main(int argc, char const *argv[]) {
     fclose(fp_b);
     fclose(fp_v);
 
-    // Solve Sparse Linear System for Multiple {b} Vectors
-    system("C:\\Miniforge3\\python.exe .\\SparseMatrixSolveMultiple.py");
-
+    // Output Simulation Info
     FILE *fp_info = fopen("info.txt", "w+");
     fprintf(fp_info, "%d\n%d\n", N, M);
     fprintf(fp_info, "%d\n%d\n", N_sens, M_sens);
     fclose(fp_info);
 
+    // Solve Sparse Linear System for Multiple {b} Vectors
+    system("C:\\Miniforge3\\python.exe .\\SparseMatrixSolveMultiple.py");
     return 0;
 }
