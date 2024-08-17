@@ -299,8 +299,67 @@ int main(int argc, char const *argv[]) {
     fclose(fp_A);
     free(A_sp);
 
-    // Solve Sparse Linear System for Multiple b Vectors
-    system("C:\\Miniforge3\\Python\\python.exe .\\SparseMatrixSolveMultiple.py");
+    // Fill up {b} matrix for Multi-Solve
+    int N_sens = 16;
+    int M_sens = 10;
+
+    FILE *fp_b = fopen("b_Sparse.txt", "w+");
+    FILE *fp_v = fopen("v_Points.txt", "w+");
+    fprintf(fp_b, "Row(int),Col(int),Data(float)\n");
+    fprintf(fp_v, "i_v1(int),i_v2(int),j_v1(int),j_v2(int)\n");
+    // Horizontal Scan
+    for (int j = 1; j <= M_sens; j++) {
+        for (int i = 1; i <= N_sens - 3; i++) {
+            int i_sens_Ii = (int) ((i + 0) * N / (N_sens + 1)); // Source i
+            int i_sens_Io = (int) ((i + 3) * N / (N_sens + 1)); // Sink i
+
+            int j_sens_Ii = (int) ((j + 0) * M / (M_sens + 1)); // Source j
+            int j_sens_Io = (int) ((j + 0) * M / (M_sens + 1)); // Sink j
+
+            int b_col_index = ((i - 1) + (j - 1) * (N_sens - 3)) + 1;
+            fprintf(fp_b, "%d, %d, %.16lf\n", (i_sens_Ii + j_sens_Ii * N) + 1, b_col_index, source);
+            fprintf(fp_b, "%d, %d, %.16lf\n", (i_sens_Io + j_sens_Io * N) + 1, b_col_index, -source);
+
+            int i_sens_v1 = (int) ((i + 1) * N / (N_sens + 1)); // v1 i
+            int i_sens_v2 = (int) ((i + 2) * N / (N_sens + 1)); // v2 i
+
+            int j_sens_v1 = (int) ((j + 0) * M / (M_sens + 1)); // v1 j
+            int j_sens_v2 = (int) ((j + 0) * M / (M_sens + 1)); // v2 j
+            fprintf(fp_v, "%d, %d, %d, %d\n", i_sens_v1, i_sens_v2, j_sens_v1, j_sens_v2);
+        }
+    }
+    // Vertical Scan
+    int b_collumn_offset = (N_sens - 3) * (M_sens); // Offset the collumns to seperate Hor/Ver Scans
+    for (int j = 1; j <= M_sens - 3; j++) {
+        for (int i = 1; i <= N_sens; i++) {
+            int i_sens_Ii = (int) ((i + 0) * N / (N_sens + 1)); // Source i
+            int i_sens_Io = (int) ((i + 0) * N / (N_sens + 1)); // Sink i
+
+            int j_sens_Ii = (int) ((j + 0) * M / (M_sens + 1)); // Source j
+            int j_sens_Io = (int) ((j + 3) * M / (M_sens + 1)); // Sink j
+
+            int b_col_index = ((i - 1) + (j - 1) * (N_sens)) + 1;
+            fprintf(fp_b, "%d, %d, %.16lf\n", (i_sens_Ii + j_sens_Ii * N) + 1, b_collumn_offset + b_col_index, source);
+            fprintf(fp_b, "%d, %d, %.16lf\n", (i_sens_Io + j_sens_Io * N) + 1, b_collumn_offset + b_col_index, -source);
+
+            int i_sens_v1 = (int) ((i + 0) * N / (N_sens + 1)); // v1 i
+            int i_sens_v2 = (int) ((i + 0) * N / (N_sens + 1)); // v2 i
+
+            int j_sens_v1 = (int) ((j + 1) * M / (M_sens + 1)); // v1 j
+            int j_sens_v2 = (int) ((j + 2) * M / (M_sens + 1)); // v2 j
+            fprintf(fp_v, "%d, %d, %d, %d\n", i_sens_v1, i_sens_v2, j_sens_v1, j_sens_v2);
+        }
+    }
+    fclose(fp_b);
+    fclose(fp_v);
+
+    // Solve Sparse Linear System for Multiple {b} Vectors
+    system("C:\\Miniforge3\\python.exe .\\SparseMatrixSolveMultiple.py");
+
+    FILE *fp_info = fopen("info.txt", "w+");
+    fprintf(fp_info, "%d\n%d\n", N, M);
+    fprintf(fp_info, "%d\n%d\n", N_sens, M_sens);
+    fclose(fp_info);
 
     return 0;
 }
