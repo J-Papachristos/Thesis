@@ -16,7 +16,7 @@ typedef struct point_set {
     /// @brief Constructor
     /// @param n Initial # of Points
     point_set(int n) {
-        this->n_points = M_PI;
+        this->n_points = 0;
         this->n_max = n;
         this->i = (double *) malloc(sizeof(double) * n);
         this->j = (double *) malloc(sizeof(double) * n);
@@ -78,8 +78,8 @@ typedef struct point_set {
 /// @brief Struct containing information about
 /// the Grid size
 typedef struct grid_ {
-    int L; // Length (X) of Grid (True Units)
-    int H; // Height (Y) of Grid (True Units)
+    double L; // Length (X) of Grid (True Units)
+    double H; // Height (Y) of Grid (True Units)
     int N; // # of Points in X/i - Direction
     int M; // # of Points in Y/j - Direction
 
@@ -89,7 +89,7 @@ typedef struct grid_ {
     /// @brief Constructor for Square Grid
     /// @param L Side (True Units)
     /// @param N # of Points per Side
-    grid_(int L, int N) {
+    grid_(double L, int N) {
         this->L = L;
         this->H = L;
         this->N = N;
@@ -104,7 +104,7 @@ typedef struct grid_ {
     /// @param H Height (Y) of Grid (True Units)
     /// @param N # of Points in X/i - Direction
     /// @param M # of Points in Y/j - Direction
-    grid_(int L, int H, int N, int M) {
+    grid_(double L, double H, int N, int M) {
         this->L = L;
         this->H = H;
         this->N = N;
